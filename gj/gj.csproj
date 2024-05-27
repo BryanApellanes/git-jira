@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\bam.base\bam.base\bam.base.csproj" />
+      <ProjectReference Include="..\..\bam.commandline\bam.commandline\bam.commandline.csproj" />
+      <ProjectReference Include="..\..\bam.console\bam.console\bam.console.csproj" />
+      <ProjectReference Include="..\..\bam.encryption\bam.encryption\bam.encryption.csproj" />
+      <ProjectReference Include="..\..\bam.logging\bam.logging\bam.logging.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="settings.yaml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Atlassian.SDK" Version="13.0.0" />
+      <PackageReference Include="Octokit" Version="11.0.1" />
+    </ItemGroup>
+
+</Project>
