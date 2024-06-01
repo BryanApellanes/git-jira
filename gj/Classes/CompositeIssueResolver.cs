@@ -3,9 +3,9 @@ using Octokit;
 
 namespace GitJira.Classes;
 
-public class CrossReferenceResolver : ICrossReferenceResolver
+public class CompositeIssueResolver : ICompositeIssueResolver
 {
-    public CrossReferenceResolver(IGitHubClientProvider gitHubClientProvider, IJiraClientProvider jiraClientProvider)
+    public CompositeIssueResolver(IGitHubClientProvider gitHubClientProvider, IJiraClientProvider jiraClientProvider)
     {
         this.GitHubClientProvider = gitHubClientProvider;
         this.JiraClientProvider = jiraClientProvider;
@@ -14,22 +14,33 @@ public class CrossReferenceResolver : ICrossReferenceResolver
     protected IGitHubClientProvider GitHubClientProvider { get; init; }
     protected IJiraClientProvider JiraClientProvider { get; init; }
 
-    public IIssueCrossReference GetCrossReference(string githubOwner, string githubRepo, int githubIssueNumber)
+    public async Task<ICompositeIssue> GetCompositeIssue(string githubOwner, string githubRepo, int githubIssueNumber)
+    {
+        GitHubClient gitHubClient = GitHubClientProvider.GetGitHubClient();
+        return await GetCompositeIssue(await gitHubClient.Issue.Get(githubOwner, githubRepo, githubIssueNumber));
+    }
+
+    public Task<ICompositeIssue> GetCompositeIssue(Octokit.Issue issue)
     {
         throw new NotImplementedException();
     }
 
-    public IIssueCrossReference GetCrossReference(Octokit.Issue issue)
+    public Task<ICompositeIssue> GetCompositeIssue(string jiraId)
     {
         throw new NotImplementedException();
     }
 
-    public IIssueCrossReference GetCrossReference(string jiraId)
+    public Task<ICompositeIssue> GetCompositeIssue(Atlassian.Jira.Issue issue)
     {
         throw new NotImplementedException();
     }
 
-    public IIssueCrossReference GetCrossReference(Atlassian.Jira.Issue issue)
+    public Task<bool> JiraIssueExistsAsync(GitHubIssueIdentifier gitHubIssueIdentifier)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> JiraIssueExistsAsync(GitHubIssueIdentifier gitHubIssueIdentifier, out Atlassian.Jira.Issue jiraIssue)
     {
         throw new NotImplementedException();
     }

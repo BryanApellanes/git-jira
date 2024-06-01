@@ -14,6 +14,6 @@ public class GitSettingsProvider : IGitSettingsProvider
     
     public IGitSettings GetGitSettings()
     {
-        throw new NotImplementedException();
+        return Settings.Current.GitSettings;
     }
 }

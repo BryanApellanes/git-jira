@@ -7,6 +7,11 @@ namespace GitJira.Classes;
 
 public class Settings
 {
+    static Settings()
+    {
+        Current = Load();
+    }
+    
     public Settings()
     {
     }
@@ -16,7 +21,7 @@ public class Settings
         this.JiraSettings = jiraSettings;
         this.GitSettings = gitSettings;
     }
-    
+    internal static Settings Current;
     public JiraSettings JiraSettings { get; set; }
     public GitSettings GitSettings { get; set; }
 
@@ -47,7 +52,7 @@ public class Settings
         {
             string encrypted = File.ReadAllText(path);
             string yaml = Aes.Decrypt(encrypted);
-            return yaml.FromYaml<Settings>();
+            return yaml.FromYaml<Settings>(true);
         }
 
         return null;

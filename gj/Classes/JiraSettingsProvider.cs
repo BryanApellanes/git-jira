@@ -5,15 +5,12 @@ namespace GitJira.Classes;
 
 public class JiraSettingsProvider : IJiraSettingsProvider
 {
-    public JiraSettingsProvider(IJiraCredentialProvider credentialProvider)
+    public JiraSettingsProvider()
     {
-        this.JiraCredentialProvider = credentialProvider;
     }
-    
-    public IJiraCredentialProvider JiraCredentialProvider { get; }
     
     public IJiraSettings GetJiraSettings()
     {
-        throw new NotImplementedException();
+        return Settings.Current.JiraSettings;
     }
 }

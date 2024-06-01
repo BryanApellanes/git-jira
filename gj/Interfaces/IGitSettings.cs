@@ -2,8 +2,9 @@ namespace GitJira.Interfaces;
 
 public interface IGitSettings
 {
-    string Owner { get; }
-    string Repository { get; }
+    string OrgName { get; }
+    string UserName { get; }
+    string RepositoryName { get; }
     string ProductHeader { get; }
     string AuthToken { get; }
 }

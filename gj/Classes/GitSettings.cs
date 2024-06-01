@@ -7,10 +7,27 @@ namespace GitJira.Classes;
 
 public class GitSettings : IGitSettings
 {
-    public string Owner { get; set; }
-    public string Repository { get; set; }
+    public string OrgName { get; set; } 
+    public string UserName { get; set; }
+    public string RepositoryName { get; set; }
     public string ProductHeader { get; set;}
     public string AuthToken { get; set; }
 
+    public GitHubRepoIdentifier GetOrgRepoIdentifier()
+    {
+        return new GitHubRepoIdentifier()
+        {
+            Owner = OrgName,
+            RepositoryName = RepositoryName
+        };
+    }
 
+    public GitHubRepoIdentifier GetUserRepoIdentifier()
+    {
+        return new GitHubRepoIdentifier()
+        {
+            Owner = UserName,
+            RepositoryName = RepositoryName
+        };
+    }
 }

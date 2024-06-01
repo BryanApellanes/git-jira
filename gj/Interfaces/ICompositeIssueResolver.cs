@@ -1,13 +1,17 @@
+using GitJira.Classes;
+
 namespace GitJira.Interfaces;
 
-public interface ICrossReferenceResolver
+public interface ICompositeIssueResolver
 {
-    IIssueCrossReference GetCrossReference(string githubOwner, string githubRepo, int githubIssueNumber);
-    IIssueCrossReference GetCrossReference(Octokit.Issue issue);
+    Task<ICompositeIssue> GetCompositeIssue(string githubOwner, string githubRepo, int githubIssueNumber);
+    Task<ICompositeIssue> GetCompositeIssue(Octokit.Issue issue);
 
-    IIssueCrossReference GetCrossReference(string jiraId);
-    IIssueCrossReference GetCrossReference(Atlassian.Jira.Issue issue);
+    Task<ICompositeIssue> GetCompositeIssue(string jiraId);
+    Task<ICompositeIssue> GetCompositeIssue(Atlassian.Jira.Issue issue);
 
+    Task<bool> JiraIssueExistsAsync(GitHubIssueIdentifier gitHubIssueIdentifier);
+    Task<bool> JiraIssueExistsAsync(GitHubIssueIdentifier gitHubIssueIdentifier, out Atlassian.Jira.Issue jiraIssue);
     Task<bool> JiraIssueExistsAsync(string githubOwner, string githubRepo, int githubIssueNumber);
     Task<bool> JiraIssueExistsAsync(string githubOwner, string githubRepo, int githubIssueNumber, out Atlassian.Jira.Issue jiraIssue);
     Task<bool> JiraIssueExistsAsync(Octokit.Issue gitHubIssue);

@@ -8,7 +8,7 @@ namespace GitJira.Classes;
 
 public class CompositeClient : ICompositeClient
 {
-    public CompositeClient(IJiraClientProvider jiraClientProvider, IGitHubClientProvider gitHubClientProvider, ICrossReferenceResolver crossReferenceResolver, ISettingsProvider settingsProvider)
+    public CompositeClient(IJiraClientProvider jiraClientProvider, IGitHubClientProvider gitHubClientProvider, ICompositeIssueResolver compositeIssueResolver, ISettingsProvider settingsProvider)
     {
         this.JiraClientProvider = jiraClientProvider;
         this.GitHubClientProvider = gitHubClientProvider;
@@ -18,36 +18,104 @@ public class CompositeClient : ICompositeClient
     public IJiraClientProvider JiraClientProvider { get; init; }
     public IGitHubClientProvider GitHubClientProvider { get; init; }
     
-    public ICrossReferenceResolver CrossReferenceResolver { get; init; }
+    public ICompositeIssueResolver CompositeIssueResolver { get; init; }
     
     public ISettingsProvider SettingsProvider { get; init; }
 
-    public Task<ICompositeClient> AddComment(IIssueCrossReference crossReference)
+    public async Task<List<Repository>> ListRepositoriesForUser(bool refresh = false)
+    {
+        Settings settings = SettingsProvider.GetSettings();
+        return await ListRepositoriesForUser(settings.GitSettings.UserName);
+    }
+
+    public async Task<List<Repository>> ListRepositoriesForUser(string userName, bool refresh = false)
+    {
+        GitHubClient client = GitHubClientProvider.GetGitHubClient();
+        return (await client.Repository.GetAllForUser(userName)).ToList();
+    }
+
+    public async Task<List<Repository>> ListRepositoriesForOrg(bool refresh = false)
+    {
+        Settings settings = SettingsProvider.GetSettings();
+        return await ListRepositoriesForOrg(settings.GitSettings.OrgName);
+    }
+
+    public async Task<List<Repository>> ListRepositoriesForOrg(string orgName, bool refresh = false)
+    {
+        GitHubClient client = GitHubClientProvider.GetGitHubClient();
+        return (await client.Repository.GetAllForOrg(orgName)).ToList();
+    }
+
+    public Task<Repository> GetRepository(GitHubRepoIdentifier gitHubRepoIdentifier)
+    {
+        return GetRepository(gitHubRepoIdentifier.Owner, gitHubRepoIdentifier.RepositoryName);
+    }
+
+    public Task<Repository> GetRepository(string owner, string repoName)
+    {
+        GitHubClient client = GitHubClientProvider.GetGitHubClient();
+        return client.Repository.Get(owner, repoName);
+    }
+
+    public async Task<List<Issue>> ListGitHubIssuesAsync()
+    {
+        Settings settings = SettingsProvider.GetSettings();
+        List<Issue> issues = new List<Issue>();
+        if (!string.IsNullOrEmpty(settings.GitSettings.OrgName))
+        {
+            issues.AddRange(await ListGitHubIssuesAsync(settings.GitSettings.GetOrgRepoIdentifier()));
+        }
+
+        if (!string.IsNullOrEmpty(settings.GitSettings.UserName))
+        {
+            issues.AddRange(await ListGitHubIssuesAsync(settings.GitSettings.GetUserRepoIdentifier()));
+        }
+
+        return issues;
+    }
+
+    public async Task<List<Issue>> ListGitHubIssuesAsync(GitHubRepoIdentifier gitHubRepoIdentifier)
+    {
+        return await ListGitHubIssuesAsync(gitHubRepoIdentifier.Owner, gitHubRepoIdentifier.RepositoryName);
+    }
+
+    public async Task<List<Issue>> ListGitHubIssuesAsync(string owner, string repoName)
+    {
+        GitHubClient client = GitHubClientProvider.GetGitHubClient();
+        return (await client.Issue.GetAllForRepository(owner, repoName)).ToList();
+    }
+
+    public Task<ICompositeClient> AddCommentAsync(ICompositeIssue crossReference)
     {
         throw new NotImplementedException();
     }
 
-    public Task<ICompositeClient> AddGitHubComment(IIssueCrossReference crossReference)
+    public Task<ICompositeClient> AddGitHubCommentAsync(ICompositeIssue crossReference)
     {
         throw new NotImplementedException();
     }
 
-    public Task<ICompositeClient> AddGitHubComment(string owner, string repo, int number)
+    public Task<ICompositeClient> AddGitHubCommentAsync(string owner, string repo, int number)
     {
         throw new NotImplementedException();
     }
 
-    public Task<ICompositeClient> AddGitHubComment(Octokit.Issue gitHubIssue)
+    public Task<ICompositeClient> AddGitHubCommentAsync(Octokit.Issue gitHubIssue)
     {
         throw new NotImplementedException();
     }
 
-    public Task<ICompositeClient> AddJiraComment(IIssueCrossReference crossReference)
+    public Task<ICompositeClient> AddJiraCommentAsync(ICompositeIssue crossReference)
     {
         throw new NotImplementedException();
     }
 
-    public Task<ICompositeClient> AddJiraComment(string jiraId)
+    public Task<ICompositeClient> AddJiraCommentAsync(string jiraId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<IssueComment>> GetGitHubCommentsAsync(GitHubIssueIdentifier gitHubIssueIdentifier)
     {
         throw new NotImplementedException();
     }
@@ -78,17 +146,17 @@ public class CompositeClient : ICompositeClient
 
     public Task<bool> JiraIssueExistsAsync(Issue gitHubIssue)
     {
-        return CrossReferenceResolver.JiraIssueExistsAsync(gitHubIssue);
+        return CompositeIssueResolver.JiraIssueExistsAsync(gitHubIssue);
     }
 
     public Task<bool> GitIssueExistsAsync(string jiraId)
     {
-        return CrossReferenceResolver.GitIssueExistsAsync(jiraId);
+        return CompositeIssueResolver.GitIssueExistsAsync(jiraId);
     }
 
     public Task<bool> GitIssueExistsAsync(Atlassian.Jira.Issue jiraIssue)
     {
-        return CrossReferenceResolver.GitIssueExistsAsync(jiraIssue);
+        return CompositeIssueResolver.GitIssueExistsAsync(jiraIssue);
     }
 
     public async Task<bool> HasReplyAsync(string owner, string repo, int number)
@@ -98,25 +166,43 @@ public class CompositeClient : ICompositeClient
 
     public async Task<bool> HasReplyAsync(Issue gitIssue)
     {
+        return await HasReplyAsync(gitIssue, out _);
+    }
+
+    public Task<bool> HasReplyAsync(Issue gitIssue, out IssueComment? comment)
+    {
         HashSet<string> repliers = SettingsProvider.GetSettings().Repliers;
-        List<IssueComment> comments = (await GetGitHubCommentsAsync(gitIssue)).ToList();
+        List<IssueComment> comments = GetGitHubCommentsAsync(gitIssue).Result.ToList();
         if (comments.Any())
         {
-            foreach (IssueComment comment in comments)
+            foreach (IssueComment c in comments)
             {
-                if (repliers.Contains(comment.User.Email))
+                if (repliers.Contains(c.User.Email))
                 {
-                    return true;
+                    comment = c;
+                    return Task.FromResult(true);
                 }
             }
         }
 
-        return false;
+        comment = null;
+        return Task.FromResult(false);
     }
 
-    public Task<Issue> GetGitHubIssueAsync(IIssueCrossReference crossReference)
+    public Task<Issue> GetGitHubIssueAsync(ICompositeIssue crossReference)
     {
-        return GetGitHubIssueAsync(crossReference.GitHubOwner, crossReference.GitHubRepo, crossReference.GitHubIssueNumber);
+        return GetGitHubIssueAsync(crossReference.GitHubIssueId);
+    }
+
+    public Task<Issue> GetGitHubIssueAsync(GitHubIssueIdentifier gitHubIssueIdentifier)
+    {
+        if (gitHubIssueIdentifier == null)
+        {
+            throw new ArgumentNullException(nameof(gitHubIssueIdentifier));
+        }
+        
+        return GetGitHubIssueAsync(gitHubIssueIdentifier.Owner, gitHubIssueIdentifier.RepoName,
+            gitHubIssueIdentifier.IssueNumber);
     }
 
     public Task<Issue> GetGitHubIssueAsync(string owner, string repo, int number)
@@ -125,7 +211,7 @@ public class CompositeClient : ICompositeClient
         return gitHubClient.Issue.Get(owner, repo, number);
     }
 
-    public Task<Atlassian.Jira.Issue> GetJiraIssueAsync(IIssueCrossReference crossReference)
+    public Task<Atlassian.Jira.Issue> GetJiraIssueAsync(ICompositeIssue crossReference)
     {
         return GetJiraIssueAsync(crossReference.JiraId);
     }

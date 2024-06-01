@@ -12,4 +12,10 @@
       <ProjectReference Include="..\gj\gj.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="settings.yaml.aes">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>
