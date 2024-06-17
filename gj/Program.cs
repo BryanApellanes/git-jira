@@ -1,4 +1,6 @@
 ﻿using Bam.Console;
+using Bam.Shell;
+using GitJira.Menus;
 
 namespace Bam.Application
 {
@@ -7,7 +9,15 @@ namespace Bam.Application
     {
         static void Main(string[] args)
         {
+            DontMessageSuccess();
             BamConsoleContext.Main(args);
+        }
+
+        private static void DontMessageSuccess()
+        {
+            IMenuItemRunResultRenderer runResultRenderer =
+                BamConsoleContext.Current.ServiceRegistry.Get<IMenuItemRunResultRenderer>();
+            ((ConsoleMenuItemRunResultRenderer)runResultRenderer).ItemRunSucceeded = (mi) => { };
         }
     }
 }

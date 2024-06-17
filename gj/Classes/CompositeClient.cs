@@ -1,6 +1,10 @@
+using System.Net.Http.Headers;
 using Atlassian.Jira;
 using Bam;
+using Bam.Console;
+using System.Linq;
 using GitJira.Interfaces;
+using MongoDB.Driver;
 using Octokit;
 using Issue = Octokit.Issue;
 
@@ -8,11 +12,16 @@ namespace GitJira.Classes;
 
 public class CompositeClient : ICompositeClient
 {
+    public const string ProjectKey = "OKTA";
+    public const string DefaultIssueType = "Internal Story";
+    public const string DefaultComponent = "Team: Developer Community Products";
+    
     public CompositeClient(IJiraClientProvider jiraClientProvider, IGitHubClientProvider gitHubClientProvider, ICompositeIssueResolver compositeIssueResolver, ISettingsProvider settingsProvider)
     {
         this.JiraClientProvider = jiraClientProvider;
         this.GitHubClientProvider = gitHubClientProvider;
         this.SettingsProvider = settingsProvider;
+        this.CompositeIssueResolver = compositeIssueResolver;
     }
     
     public IJiraClientProvider JiraClientProvider { get; init; }
@@ -22,102 +31,60 @@ public class CompositeClient : ICompositeClient
     
     public ISettingsProvider SettingsProvider { get; init; }
 
-    public async Task<List<Repository>> ListRepositoriesForUser(bool refresh = false)
+    public IEnumerable<ICompositeIssue> GetCompositeIssues(GitHubRepoIdentifier gitHubRepoIdentifier)
     {
-        Settings settings = SettingsProvider.GetSettings();
-        return await ListRepositoriesForUser(settings.GitSettings.UserName);
-    }
-
-    public async Task<List<Repository>> ListRepositoriesForUser(string userName, bool refresh = false)
-    {
-        GitHubClient client = GitHubClientProvider.GetGitHubClient();
-        return (await client.Repository.GetAllForUser(userName)).ToList();
-    }
-
-    public async Task<List<Repository>> ListRepositoriesForOrg(bool refresh = false)
-    {
-        Settings settings = SettingsProvider.GetSettings();
-        return await ListRepositoriesForOrg(settings.GitSettings.OrgName);
-    }
-
-    public async Task<List<Repository>> ListRepositoriesForOrg(string orgName, bool refresh = false)
-    {
-        GitHubClient client = GitHubClientProvider.GetGitHubClient();
-        return (await client.Repository.GetAllForOrg(orgName)).ToList();
-    }
-
-    public Task<Repository> GetRepository(GitHubRepoIdentifier gitHubRepoIdentifier)
-    {
-        return GetRepository(gitHubRepoIdentifier.Owner, gitHubRepoIdentifier.RepositoryName);
-    }
-
-    public Task<Repository> GetRepository(string owner, string repoName)
-    {
-        GitHubClient client = GitHubClientProvider.GetGitHubClient();
-        return client.Repository.Get(owner, repoName);
-    }
-
-    public async Task<List<Issue>> ListGitHubIssuesAsync()
-    {
-        Settings settings = SettingsProvider.GetSettings();
-        List<Issue> issues = new List<Issue>();
-        if (!string.IsNullOrEmpty(settings.GitSettings.OrgName))
+        List<Issue> githubIssues = ListGitHubIssuesAsync(gitHubRepoIdentifier).Result;
+        foreach (Issue issue in githubIssues)
         {
-            issues.AddRange(await ListGitHubIssuesAsync(settings.GitSettings.GetOrgRepoIdentifier()));
+            if (issue.PullRequest != null) // filter out pull requests
+            {
+                continue;
+            }
+            yield return this.CompositeIssueResolver.GetCompositeIssue(this, new GitHubIssueIdentifier()
+            {
+                Owner = gitHubRepoIdentifier.Owner,
+                RepoName = gitHubRepoIdentifier.RepositoryName,
+                IssueNumber = issue.Number
+            }).Result;
+        }
+    }
+    public async Task<List<ICompositeIssue>> GetCompositeIssuesAsync(GitHubRepoIdentifier gitHubRepoIdentifier)
+    {
+        List<Issue> githubIssues = await ListGitHubIssuesAsync(gitHubRepoIdentifier);
+        List<ICompositeIssue> results = new List<ICompositeIssue>();
+        foreach (Issue issue in githubIssues)
+        {
+            results.Add(await this.CompositeIssueResolver.GetCompositeIssue(this, new GitHubIssueIdentifier()
+            {
+                Owner = gitHubRepoIdentifier.Owner,
+                RepoName = gitHubRepoIdentifier.RepositoryName,
+                IssueNumber = issue.Number
+            }));
         }
 
-        if (!string.IsNullOrEmpty(settings.GitSettings.UserName))
-        {
-            issues.AddRange(await ListGitHubIssuesAsync(settings.GitSettings.GetUserRepoIdentifier()));
-        }
-
-        return issues;
+        return results;
     }
 
     public async Task<List<Issue>> ListGitHubIssuesAsync(GitHubRepoIdentifier gitHubRepoIdentifier)
     {
         return await ListGitHubIssuesAsync(gitHubRepoIdentifier.Owner, gitHubRepoIdentifier.RepositoryName);
     }
-
+    
     public async Task<List<Issue>> ListGitHubIssuesAsync(string owner, string repoName)
     {
         GitHubClient client = GitHubClientProvider.GetGitHubClient();
         return (await client.Issue.GetAllForRepository(owner, repoName)).ToList();
     }
 
-    public Task<ICompositeClient> AddCommentAsync(ICompositeIssue crossReference)
+    public async Task<List<IssueComment>> GetGitHubCommentsAsync(GitHubIssueIdentifier gitHubIssueIdentifier)
     {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICompositeClient> AddGitHubCommentAsync(ICompositeIssue crossReference)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICompositeClient> AddGitHubCommentAsync(string owner, string repo, int number)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICompositeClient> AddGitHubCommentAsync(Octokit.Issue gitHubIssue)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICompositeClient> AddJiraCommentAsync(ICompositeIssue crossReference)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICompositeClient> AddJiraCommentAsync(string jiraId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<List<IssueComment>> GetGitHubCommentsAsync(GitHubIssueIdentifier gitHubIssueIdentifier)
-    {
-        throw new NotImplementedException();
+        GitHubClient client = GitHubClientProvider.GetGitHubClient();
+        return
+        [
+            ..await client.Issue.Comment.GetAllForIssue(gitHubIssueIdentifier.Owner,
+                gitHubIssueIdentifier.RepoName,
+                gitHubIssueIdentifier.IssueNumber)
+        ];
     }
 
     public async Task<List<IssueComment>> GetGitHubCommentsAsync(string owner, string repo, int number)
@@ -127,41 +94,21 @@ public class CompositeClient : ICompositeClient
 
     public async Task<List<IssueComment>> GetGitHubCommentsAsync(Octokit.Issue gitHubIssue)
     {
-        HttpClient httpClient = new HttpClient();
-        HttpResponseMessage response = await httpClient.GetAsync(gitHubIssue.CommentsUrl);
-        response.EnsureSuccessStatusCode();
-        string json = await response.Content.ReadAsStringAsync();
-        if (!string.IsNullOrEmpty(json))
-        {
-            return json.FromJson<List<IssueComment>>();
-        }
-
-        return new List<IssueComment>();
+        Settings settings = SettingsProvider.GetSettings();
+        
+        GitHubClient client = GitHubClientProvider.GetGitHubClient();
+        return
+        [
+            ..await client.Issue.Comment.GetAllForIssue(settings.GitSettings.OwnerName,
+                settings.GitSettings.RepositoryName,
+                gitHubIssue.Number)
+        ];
     }
 
-    public async Task<bool> JiraIssueExistsAsync(string githubOwner, string githubRepo, int githubIssueNumber)
+    public Task<bool> JiraIssueExistsAsync(GitHubIssueIdentifier gitHubIssueIdentifier,
+        out Atlassian.Jira.Issue jiraIssue)
     {
-        return await JiraIssueExistsAsync(await GetGitHubIssueAsync(githubOwner, githubRepo, githubIssueNumber));
-    }
-
-    public Task<bool> JiraIssueExistsAsync(Issue gitHubIssue)
-    {
-        return CompositeIssueResolver.JiraIssueExistsAsync(gitHubIssue);
-    }
-
-    public Task<bool> GitIssueExistsAsync(string jiraId)
-    {
-        return CompositeIssueResolver.GitIssueExistsAsync(jiraId);
-    }
-
-    public Task<bool> GitIssueExistsAsync(Atlassian.Jira.Issue jiraIssue)
-    {
-        return CompositeIssueResolver.GitIssueExistsAsync(jiraIssue);
-    }
-
-    public async Task<bool> HasReplyAsync(string owner, string repo, int number)
-    {
-        return await HasReplyAsync(await GetGitHubIssueAsync(owner, repo, number));
+        return CompositeIssueResolver.JiraIssueExistsAsync(gitHubIssueIdentifier, out jiraIssue);
     }
 
     public async Task<bool> HasReplyAsync(Issue gitIssue)
@@ -177,7 +124,7 @@ public class CompositeClient : ICompositeClient
         {
             foreach (IssueComment c in comments)
             {
-                if (repliers.Contains(c.User.Email))
+                if (repliers.Contains(c.User.Login))
                 {
                     comment = c;
                     return Task.FromResult(true);
@@ -188,12 +135,7 @@ public class CompositeClient : ICompositeClient
         comment = null;
         return Task.FromResult(false);
     }
-
-    public Task<Issue> GetGitHubIssueAsync(ICompositeIssue crossReference)
-    {
-        return GetGitHubIssueAsync(crossReference.GitHubIssueId);
-    }
-
+    
     public Task<Issue> GetGitHubIssueAsync(GitHubIssueIdentifier gitHubIssueIdentifier)
     {
         if (gitHubIssueIdentifier == null)
@@ -211,14 +153,95 @@ public class CompositeClient : ICompositeClient
         return gitHubClient.Issue.Get(owner, repo, number);
     }
 
-    public Task<Atlassian.Jira.Issue> GetJiraIssueAsync(ICompositeIssue crossReference)
+    public async Task<Atlassian.Jira.Issue> CreateJiraIssueAsync(ICompositeIssue compositeIssue)
     {
-        return GetJiraIssueAsync(crossReference.JiraId);
+        if (compositeIssue.JiraIssue != null)
+        {
+            return compositeIssue.JiraIssue;
+        }
+
+        Jira jira = JiraClientProvider.GetJiraClient();
+        Atlassian.Jira.Issue jiraIssue = new Atlassian.Jira.Issue(jira, ProjectKey)
+        {
+            Summary = compositeIssue.GitHubIssue.Title,
+            Description = $"{compositeIssue.GitHubIssue.Url}\r\n{compositeIssue.GitHubIssue.Body}",
+            Type = GetIssueType(DefaultIssueType),
+            Components = { GetComponent(DefaultComponent) }
+        };
+        string jiraId = await jira.Issues.CreateIssueAsync(jiraIssue);
+
+        compositeIssue.JiraIssue = await GetJiraIssueAsync(jiraId);
+        return compositeIssue.JiraIssue;
+    }
+
+    public async Task<IssueComment> AddGithubComment(ICompositeIssue compositeIssue, string comment)
+    {
+        GitHubClient gitHubClient = GitHubClientProvider.GetGitHubClient();
+        return await gitHubClient.Issue.Comment.Create(compositeIssue.GitHubIssueIdentifier.Owner,
+            compositeIssue.GitHubIssueIdentifier.RepoName, compositeIssue.GitHubIssue.Number, comment);
     }
 
     public async Task<Atlassian.Jira.Issue> GetJiraIssueAsync(string jiraId)
     {
         Jira jira = JiraClientProvider.GetJiraClient();
         return await jira.Issues.GetIssueAsync(jiraId);
+    }
+    
+    public void DeleteMe()
+    {
+        Jira jira = JiraClientProvider.GetJiraClient();
+        List<ProjectComponent> issueTypes = jira.Components.GetComponentsAsync("OKTA").Result.ToList();
+        foreach (ProjectComponent projectComponent in issueTypes)
+        {
+            Message.PrintLine($"({projectComponent.Id}) {projectComponent.Name}");
+        }
+        
+        Atlassian.Jira.Issue issue = new Atlassian.Jira.Issue(jira, ProjectKey)
+        {
+            Summary = "this is a test",
+            Description = "The description of this test Jira",
+            Type = GetIssueType(DefaultIssueType),
+            Components = { GetComponent(DefaultComponent) }
+        };
+
+        string result = jira.Issues.CreateIssueAsync(issue).Result;
+        Message.PrintLine(result);
+    }
+
+    protected IssueType? GetIssueType(string issueTypeName)
+    {
+        return GetIssueTypes().FirstOrDefault(it => it.Name.Equals(issueTypeName));
+    }
+
+    private IEnumerable<IssueType> _issueTypes;
+    protected IEnumerable<IssueType> GetIssueTypes()
+    {
+        if (_issueTypes == null)
+        {
+         
+            Jira jira = JiraClientProvider.GetJiraClient();
+            
+            _issueTypes = jira.IssueTypes.GetIssueTypesForProjectAsync(ProjectKey).Result;
+        }
+
+        return _issueTypes;
+    }
+
+    protected ProjectComponent? GetComponent(string componentName)
+    {
+        return GetComponents().FirstOrDefault(c => c.Name.Equals(componentName));
+    }
+    
+    private IEnumerable<ProjectComponent> _projectComponents;
+    protected IEnumerable<ProjectComponent> GetComponents()
+    {
+        if (_projectComponents == null)
+        {
+            Jira jira = JiraClientProvider.GetJiraClient();
+
+            _projectComponents = jira.Components.GetComponentsAsync(ProjectKey).Result;
+        }
+
+        return _projectComponents;
     }
 }

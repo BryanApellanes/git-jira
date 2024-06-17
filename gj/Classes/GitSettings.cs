@@ -7,7 +7,7 @@ namespace GitJira.Classes;
 
 public class GitSettings : IGitSettings
 {
-    public string OrgName { get; set; } 
+    public string OwnerName { get; set; } 
     public string UserName { get; set; }
     public string RepositoryName { get; set; }
     public string ProductHeader { get; set;}
@@ -17,7 +17,7 @@ public class GitSettings : IGitSettings
     {
         return new GitHubRepoIdentifier()
         {
-            Owner = OrgName,
+            Owner = OwnerName,
             RepositoryName = RepositoryName
         };
     }

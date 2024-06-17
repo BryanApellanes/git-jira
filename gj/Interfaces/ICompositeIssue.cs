@@ -4,12 +4,11 @@ namespace GitJira.Interfaces;
 
 public interface ICompositeIssue
 {
+    ReplyStatus ReplyStatus { get; set; }
     Atlassian.Jira.Issue JiraIssue { get; set; }
     Octokit.Issue GitHubIssue { get; set; }
-    string JiraId { get; set; }
-    GitHubIssueIdentifier GitHubIssueId { get; set; }
-    Task<ICompositeIssue> AddCommentAsync(string comment);
-    Task<ICompositeIssue> AddJiraCommentAsync(string comment);
-    Task<ICompositeIssue> AddGitHubCommentAsync(string comment);
+    Octokit.IssueComment Reply { get; set; }
+    string JiraKey { get; set; }
+    GitHubIssueIdentifier GitHubIssueIdentifier { get; set; }
     Task<ICompositeIssue> LoadAsync(ICompositeClient compositeClient);
 }

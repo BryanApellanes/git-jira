@@ -5,86 +5,47 @@ namespace GitJira.Classes;
 
 public class CompositeIssueResolver : ICompositeIssueResolver
 {
-    public CompositeIssueResolver(IGitHubClientProvider gitHubClientProvider, IJiraClientProvider jiraClientProvider)
+    public CompositeIssueResolver(IGitHubClientProvider gitHubClientProvider, IJiraClientProvider jiraClientProvider, IJiraReferenceResolver jiraReferenceResolver)
     {
         this.GitHubClientProvider = gitHubClientProvider;
         this.JiraClientProvider = jiraClientProvider;
+        this.JiraReferenceResolver = jiraReferenceResolver;
     }
     
     protected IGitHubClientProvider GitHubClientProvider { get; init; }
     protected IJiraClientProvider JiraClientProvider { get; init; }
+    
+    protected IJiraReferenceResolver JiraReferenceResolver { get; init; }
 
-    public async Task<ICompositeIssue> GetCompositeIssue(string githubOwner, string githubRepo, int githubIssueNumber)
+    public async Task<ICompositeIssue> GetCompositeIssue(ICompositeClient compositeClient, GitHubIssueIdentifier gitHubIssueIdentifier)
     {
         GitHubClient gitHubClient = GitHubClientProvider.GetGitHubClient();
-        return await GetCompositeIssue(await gitHubClient.Issue.Get(githubOwner, githubRepo, githubIssueNumber));
-    }
+        Octokit.Issue githubIssue = await gitHubClient.Issue.Get(gitHubIssueIdentifier.Owner,
+            gitHubIssueIdentifier.RepoName, gitHubIssueIdentifier.IssueNumber);
 
-    public Task<ICompositeIssue> GetCompositeIssue(Octokit.Issue issue)
-    {
-        throw new NotImplementedException();
-    }
+        await JiraIssueExistsAsync(gitHubIssueIdentifier, out Atlassian.Jira.Issue jiraIssue);
 
-    public Task<ICompositeIssue> GetCompositeIssue(string jiraId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICompositeIssue> GetCompositeIssue(Atlassian.Jira.Issue issue)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> JiraIssueExistsAsync(GitHubIssueIdentifier gitHubIssueIdentifier)
-    {
-        throw new NotImplementedException();
+        return new CompositeIssue(githubIssue, jiraIssue)
+        {
+            CompositeClient = compositeClient,
+            GitHubIssueIdentifier = gitHubIssueIdentifier
+        };
     }
 
     public Task<bool> JiraIssueExistsAsync(GitHubIssueIdentifier gitHubIssueIdentifier, out Atlassian.Jira.Issue jiraIssue)
     {
-        throw new NotImplementedException();
+        bool inComments = this.JiraReferenceResolver.JiraReferenceExistsInCommentsAsync(gitHubIssueIdentifier, out jiraIssue).Result;
+        if (inComments)
+        {
+            return Task.FromResult(true);
+        }
+
+        bool asLabel = this.JiraReferenceResolver
+            .JiraReferenceLabelExistsInCommentsAsync(gitHubIssueIdentifier, out jiraIssue).Result;
+
+        return Task.FromResult(asLabel);
     }
 
-    public Task<bool> JiraIssueExistsAsync(string githubOwner, string githubRepo, int githubIssueNumber)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> JiraIssueExistsAsync(string githubOwner, string githubRepo, int githubIssueNumber, out Atlassian.Jira.Issue jiraIssue)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> JiraIssueExistsAsync(Issue gitHubIssue)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> JiraIssueExistsAsync(Issue gitHubIssue, out Atlassian.Jira.Issue jiraIssue)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> GitIssueExistsAsync(string jiraId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> GitIssueExistsAsync(string jiraId, out Issue gitHubIssue)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> GitIssueExistsAsync(Atlassian.Jira.Issue jiraIssue)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> GitIssueExistsAsync(Atlassian.Jira.Issue jiraIssue, out Issue gitHubIssue)
-    {
-        throw new NotImplementedException();
-    }
-    
     protected Task<Issue> GetGitHubIssueAsync(string owner, string repo, int number)
     {
         GitHubClient gitHubClient = GitHubClientProvider.GetGitHubClient();

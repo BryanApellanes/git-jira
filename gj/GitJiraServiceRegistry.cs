@@ -22,6 +22,7 @@ public class GitJiraServiceRegistry
             .For<ICompositeClient>().Use<CompositeClient>()
             .For<IApplicationNameProvider>().Use<ProcessApplicationNameProvider>()
             .For<ISettingsProvider>().Use<YamlFileSettingsProvider>()
+            .For<IJiraReferenceResolver>().Use<JiraReferenceResolver>()
             .For<ILogger>().Use<TextFileLogger>());
     }
 }

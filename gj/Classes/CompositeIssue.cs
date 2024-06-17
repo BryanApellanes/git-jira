@@ -1,41 +1,85 @@
+using Bam;
 using GitJira.Interfaces;
+using Octokit;
 
 namespace GitJira.Classes;
 
 public class CompositeIssue : ICompositeIssue
 {
-    public CompositeIssue(Atlassian.Jira.Issue jiraIssue, Octokit.Issue gitHubIssue)
+    public CompositeIssue(Issue gitHubIssue, Atlassian.Jira.Issue jiraIssue)
     {
         this.JiraIssue = jiraIssue;
         this.GitHubIssue = gitHubIssue;
     }
-    
+
+    private ReplyStatus _replyStatus;
+
+    public ReplyStatus ReplyStatus
+    {
+        get
+        {
+            if (_replyStatus == ReplyStatus.Unknown && CompositeClient != null)
+            {
+                if (CompositeClient.HasReplyAsync(GitHubIssue, out Octokit.IssueComment? comment).Result)
+                {
+                    Reply = comment;
+                    _replyStatus = ReplyStatus.ReplyExists;
+                }
+                else
+                {
+                    _replyStatus = ReplyStatus.NoReply;
+                }
+            }
+
+            return _replyStatus;
+        }
+        set
+        {
+            _replyStatus = value;
+        }
+    }
+    public ICompositeClient CompositeClient { get; set; }
     public Atlassian.Jira.Issue JiraIssue { get; set; }
     public Octokit.Issue GitHubIssue { get; set; }
-    
-    public string JiraId { get; set; }
-    
-    public GitHubIssueIdentifier GitHubIssueId { get; set; }
-    
-    public Task<ICompositeIssue> AddCommentAsync(string comment)
-    {
-        throw new NotImplementedException();
-    }
+    public IssueComment Reply { get; set; }
 
-    public Task<ICompositeIssue> AddJiraCommentAsync(string comment)
-    {
-        throw new NotImplementedException();
-    }
+    private string _jiraId;
 
-    public Task<ICompositeIssue> AddGitHubCommentAsync(string comment)
+    public string JiraKey
     {
-        throw new NotImplementedException();
+        get
+        {
+            if (string.IsNullOrEmpty(_jiraId) && JiraIssue != null)
+            {
+                return JiraIssue.Key.ToString();
+            }
+
+            return _jiraId;
+        }
+        set => _jiraId = value;
     }
+    
+    public GitHubIssueIdentifier GitHubIssueIdentifier { get; set; }
 
     public async Task<ICompositeIssue> LoadAsync(ICompositeClient compositeClient)
     {
-        this.JiraIssue = await compositeClient.GetJiraIssueAsync(this.JiraId);
-        this.GitHubIssue = await compositeClient.GetGitHubIssueAsync(this.GitHubIssueId);
+        this.JiraIssue = await compositeClient.GetJiraIssueAsync(this.JiraKey);
+        this.GitHubIssue = await compositeClient.GetGitHubIssueAsync(this.GitHubIssueIdentifier);
         return this;
+    }
+
+    public override string ToString()
+    {
+        return $"{GitHubIssue.CreatedAt}\t [{GitHubIssue.Number}] {GitHubIssue.Title} (GitReply: {GetReplyStatusText()}) (Jira: {JiraKey.Or("NA")})";
+    }
+
+    private string GetReplyStatusText()
+    {
+        if (ReplyStatus == ReplyStatus.ReplyExists)
+        {
+            return Reply.User.Login;
+        }
+
+        return ReplyStatus.ToString();
     }
 }

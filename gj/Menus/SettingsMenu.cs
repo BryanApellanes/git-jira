@@ -17,36 +17,36 @@ public class SettingsMenu : MenuContainer
         Message.Print(Settings.Current.ToYaml());
     }
 
-    [MenuItem("Set Jira UserName")]
+    [MenuItem("Set Jira (Atlassian) UserName")]
     public async Task SetJiraUserName()
     {
         Settings.Current ??= Settings.Load();
         
         string userName = Prompt.Show("Enter user name");
         Settings.Current.JiraSettings.Credentials.UserName = userName;
-        Settings.Current.SaveEncrypted();
+        Settings.Current.Save();
         PrintSettings();
     }
     
-    [MenuItem("Set Jira Token")]
+    [MenuItem("Set Jira (Atlassian) Token")]
     public async Task ShowSettings()
     {
         Settings.Current ??= Settings.Load();
         
         string token = Prompt.Show("Enter token");
         Settings.Current.JiraSettings.Credentials.Password = token;
-        Settings.Current.SaveEncrypted();
+        Settings.Current.Save();
         PrintSettings();
     }
 
-    [MenuItem("Set subdomain")]
+    [MenuItem("Set Jira (Atlassian) subdomain")]
     public async Task SetSubdomain()
     {
         Settings.Current ??= Settings.Load();
         
         string subdomain = Prompt.Show("Enter subdomain");
         Settings.Current.JiraSettings.Url = $"https://{subdomain}.atlassian.net";
-        Settings.Current.SaveEncrypted();
+        Settings.Current.Save();
         PrintSettings();
     }
 
@@ -57,7 +57,7 @@ public class SettingsMenu : MenuContainer
         
         string authToken = Prompt.Show("Enter auth token");
         Settings.Current.GitSettings.AuthToken = authToken;
-        Settings.Current.SaveEncrypted();
+        Settings.Current.Save();
         PrintSettings();
     }
 
@@ -67,19 +67,19 @@ public class SettingsMenu : MenuContainer
         Settings.Current ??= Settings.Load();
         
         string org = Prompt.Show("Enter GitHub Org");
-        Settings.Current.GitSettings.OrgName = org;
-        Settings.Current.SaveEncrypted();
+        Settings.Current.GitSettings.OwnerName = org;
+        Settings.Current.Save();
         PrintSettings();
     }
     
-    [MenuItem("Set GitHub Owner")]
-    public async Task SetGitHubOwner()
+    [MenuItem("Set GitHub User")]
+    public async Task SetGitHubUser()
     {
         Settings.Current ??= Settings.Load();
         
-        string owner = Prompt.Show("Enter GitHub Owner");
+        string owner = Prompt.Show("Enter GitHub User");
         Settings.Current.GitSettings.UserName = owner;
-        Settings.Current.SaveEncrypted();
+        Settings.Current.Save();
         PrintSettings();
     }
     
@@ -90,7 +90,7 @@ public class SettingsMenu : MenuContainer
         
         string repo = Prompt.Show("Enter GitHub Repo");
         Settings.Current.GitSettings.RepositoryName = repo;
-        Settings.Current.SaveEncrypted();
+        Settings.Current.Save();
         PrintSettings();
     }
 
@@ -101,7 +101,7 @@ public class SettingsMenu : MenuContainer
 
         string header = Prompt.Show("Enter product header");
         Settings.Current.GitSettings.ProductHeader = header;
-        Settings.Current.SaveEncrypted();
+        Settings.Current.Save();
         PrintSettings();
     }
 }
