@@ -1,5 +1,6 @@
 using Bam;
 using Bam.Console;
+using Bam.Encryption;
 using Bam.Shell;
 using GitJira.Classes;
 using GitJira.Interfaces;
@@ -23,6 +24,15 @@ public class IssueManagementMenu : MenuContainer
         issueLoadTask = GetIssues(PrintIssue);  
     }
 
+    [MenuItem("test")]
+    public async Task Test()
+    {
+        string cipherFile = Path.Combine(Environment.CurrentDirectory, "settings.yaml.aes");
+        string cipher = await File.ReadAllTextAsync(cipherFile);
+        string decrypted = Aes.Decrypt(cipher, "P455w0rd1!");
+        Message.PrintLine(decrypted);
+    }
+    
     [MenuItem("Show issues")]
     public async Task ShowIssues()
     {
