@@ -40,7 +40,7 @@ public class JiraReferenceResolver : IJiraReferenceResolver
         return Task.FromResult(false);
     }
     
-    public Task<bool> JiraReferenceLabelExistsInCommentsAsync(GitHubIssueIdentifier gitHubIssueIdentifier, out Issue jiraIssue)
+    public Task<bool> JiraReferenceLabelExistsAsync(GitHubIssueIdentifier gitHubIssueIdentifier, out Issue jiraIssue)
     {
         GitHubClient gitHubClient = GitHubClientProvider.GetGitHubClient();
         IReadOnlyList<Label> labels = gitHubClient.Issue.Labels.GetAllForIssue(gitHubIssueIdentifier.Owner, gitHubIssueIdentifier.RepoName,

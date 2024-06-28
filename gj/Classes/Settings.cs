@@ -31,7 +31,7 @@ public class Settings
 
     public HashSet<string> Repliers { get; set; }
     
-    public Dictionary<string, string> CannedResponses { get; set; }
+    public List<string> CannedResponses { get; set; }
     
     private static Settings _settings;
     public static Settings Load()

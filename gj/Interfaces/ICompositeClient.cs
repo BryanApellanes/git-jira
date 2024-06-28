@@ -29,7 +29,7 @@ public interface ICompositeClient
     Task<Octokit.Issue> GetGitHubIssueAsync(GitHubIssueIdentifier gitHubIssueIdentifier);
     Task<Octokit.Issue> GetGitHubIssueAsync(string owner, string repo, int number);
 
-    Task<Atlassian.Jira.Issue> CreateJiraIssueAsync(ICompositeIssue compositeIssue);
-    Task<Octokit.IssueComment> AddGithubComment(ICompositeIssue compositeIssue, string comment);
+    Task<Atlassian.Jira.Issue> CreateJiraIssueAsync(ICompositeIssue compositeIssue, string githubComment = null);
+    Task<Octokit.IssueComment> AddGithubCommentAsync(ICompositeIssue compositeIssue, string githubComment);
     Task<Atlassian.Jira.Issue> GetJiraIssueAsync(string jiraId);
 }

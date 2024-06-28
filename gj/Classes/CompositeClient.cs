@@ -153,7 +153,7 @@ public class CompositeClient : ICompositeClient
         return gitHubClient.Issue.Get(owner, repo, number);
     }
 
-    public async Task<Atlassian.Jira.Issue> CreateJiraIssueAsync(ICompositeIssue compositeIssue)
+    public async Task<Atlassian.Jira.Issue> CreateJiraIssueAsync(ICompositeIssue compositeIssue, string? githubComment = null)
     {
         if (compositeIssue.JiraIssue != null)
         {
@@ -164,21 +164,27 @@ public class CompositeClient : ICompositeClient
         Atlassian.Jira.Issue jiraIssue = new Atlassian.Jira.Issue(jira, ProjectKey)
         {
             Summary = compositeIssue.GitHubIssue.Title,
-            Description = $"{compositeIssue.GitHubIssue.Url}\r\n{compositeIssue.GitHubIssue.Body}",
+            Description = $"{compositeIssue.GitHubIssue.HtmlUrl}\r\n{compositeIssue.GitHubIssue.Body}",
             Type = GetIssueType(DefaultIssueType),
             Components = { GetComponent(DefaultComponent) }
         };
         string jiraId = await jira.Issues.CreateIssueAsync(jiraIssue);
 
         compositeIssue.JiraIssue = await GetJiraIssueAsync(jiraId);
+        /* Resource not available through personal access token https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment
+        if (!string.IsNullOrEmpty(githubComment))
+        {
+            compositeIssue.Reply = await AddGithubCommentAsync(compositeIssue, $"{githubComment}\r\n{jiraId}");
+        }
+        */
         return compositeIssue.JiraIssue;
     }
 
-    public async Task<IssueComment> AddGithubComment(ICompositeIssue compositeIssue, string comment)
+    public async Task<IssueComment> AddGithubCommentAsync(ICompositeIssue compositeIssue, string githubComment)
     {
         GitHubClient gitHubClient = GitHubClientProvider.GetGitHubClient();
         return await gitHubClient.Issue.Comment.Create(compositeIssue.GitHubIssueIdentifier.Owner,
-            compositeIssue.GitHubIssueIdentifier.RepoName, compositeIssue.GitHubIssue.Number, comment);
+            compositeIssue.GitHubIssueIdentifier.RepoName, compositeIssue.GitHubIssue.Number, githubComment);
     }
 
     public async Task<Atlassian.Jira.Issue> GetJiraIssueAsync(string jiraId)

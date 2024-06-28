@@ -1,3 +1,5 @@
+using System.Text;
+using Amazon.Runtime.EventStreams;
 using Bam;
 using Bam.Console;
 using Bam.Encryption;
@@ -23,19 +25,11 @@ public class IssueManagementMenu : MenuContainer
         issues = new List<ICompositeIssue>();
         issueLoadTask = GetIssues(PrintIssue);  
     }
-
-    [MenuItem("test")]
-    public async Task Test()
-    {
-        string cipherFile = Path.Combine(Environment.CurrentDirectory, "settings.yaml.aes");
-        string cipher = await File.ReadAllTextAsync(cipherFile);
-        string decrypted = Aes.Decrypt(cipher, "P455w0rd1!");
-        Message.PrintLine(decrypted);
-    }
     
     [MenuItem("Show issues")]
     public async Task ShowIssues()
     {
+        PrintRepositoryName();
         foreach (ICompositeIssue issue in await issueLoadTask)
         {
             PrintIssue(issue);
@@ -43,7 +37,7 @@ public class IssueManagementMenu : MenuContainer
     }
     
     [MenuItem("Select Issue")]
-    public async Task SelectIssue()
+    public async Task SelectIssueAsync()
     {
         await issueLoadTask;
         currentIssue = Prompt.SelectFrom(issues);
@@ -54,35 +48,26 @@ public class IssueManagementMenu : MenuContainer
     {
         PrintIssue(currentIssue);
     }
-
-    [MenuItem("print settings with repsonses")]
-    public void PrintSettings()
-    {
-        Settings settings = Settings.Load();
-        settings.CannedResponses = new Dictionary<string, string>()
-        {
-            { 
-                "Opening", "Thanks for opening this issue.  I've filed an internal ticket for review and prioritization. {0}"
-            },
-            {
-                "Reporting", "Thanks for reporting this issue.  I've filed an internal ticket for review and prioritization. {0}"
-            }
-        };
-        
-        Message.PrintLine(settings.ToYaml());
-    }
+    
     
     [MenuItem("Create Jira and reply to Github issue")]
     public async Task CreateJiraAndReplyToGithubIssue()
     {
         if (currentIssue == null)
         {
-            SelectIssue();
+            await SelectIssueAsync();
         }
         
         Message.PrintLine("Creating Jira for GH issue: {0}", ConsoleColor.Cyan, currentIssue.GitHubIssue.Title);
+        //string comment = SelectResponse();
+        Atlassian.Jira.Issue jiraIssue = await client.CreateJiraIssueAsync(currentIssue);
+        Message.PrintLine("Created Jira: {0}", jiraIssue.Key);
+    }
 
-        //Atlassian.Jira.Issue jiraIssue = await client.CreateJiraIssueAsync(currentIssue);
+    [MenuItem("Test select repsonse")]
+    public async Task TestSelectResponse()
+    {
+        Message.PrintLine(SelectResponse());
     }
     
     public static async Task<List<ICompositeIssue>> GetIssues(Action<ICompositeIssue> onIssueLoaded = null)
@@ -106,6 +91,21 @@ public class IssueManagementMenu : MenuContainer
             return;
         }
         Message.PrintLine($"- {issue.ToString()})");
+    }
+
+    private static string SelectResponse()
+    {
+        List<string> responses =
+        [
+            "enter custom response"
+        ];
+        responses.AddRange(Settings.Current.CannedResponses);
+        return Prompt.SelectFrom(responses);
+    }
+    
+    private static void PrintRepositoryName()
+    {
+        Message.PrintLine(Settings.Current.GitSettings.RepositoryName);
     }
     
     private static void LoadCompositeIssues(Action<ICompositeIssue> onIssueLoaded = null)

@@ -41,7 +41,7 @@ public class CompositeIssueResolver : ICompositeIssueResolver
         }
 
         bool asLabel = this.JiraReferenceResolver
-            .JiraReferenceLabelExistsInCommentsAsync(gitHubIssueIdentifier, out jiraIssue).Result;
+            .JiraReferenceLabelExistsAsync(gitHubIssueIdentifier, out jiraIssue).Result;
 
         return Task.FromResult(asLabel);
     }
