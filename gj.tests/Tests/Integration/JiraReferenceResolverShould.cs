@@ -1,7 +1,7 @@
 using Bam;
 using Bam.Console;
 using Bam.CoreServices;
-using Bam.Testing;
+using Bam.Test;
 using GitJira.Classes;
 using GitJira.Interfaces;
 

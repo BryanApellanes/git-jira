@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\bam.testing\bam.testing\bam.testing.csproj" />
+      <ProjectReference Include="..\..\bam.test\bam.test\bam.test.csproj" />
       <ProjectReference Include="..\gj\gj.csproj" />
     </ItemGroup>
 
