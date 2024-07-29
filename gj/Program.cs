@@ -10,7 +10,7 @@ namespace Bam.Application
         static void Main(string[] args)
         {
             DontMessageSuccess();
-            BamConsoleContext.Main(args);
+            BamConsoleContext.StaticMain(args);
         }
 
         private static void DontMessageSuccess()
