@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishAot>true</PublishAot>
+        <RootNamespace>GitJira</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\bamtk\submodules\bam.base\bam.base\bam.base.csproj" />
+      <ProjectReference Include="..\..\bamtk\submodules\bam.console\bam.console\bam.console.csproj" />
+      <ProjectReference Include="..\..\bamtk\submodules\bam.encryption\bam.encryption\bam.encryption.csproj" />
+      <ProjectReference Include="..\..\bamtk\submodules\bam.logging\bam.logging\bam.logging.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="settings.yaml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Atlassian.SDK" Version="13.0.0" />
+      <PackageReference Include="Octokit" Version="14.0.0" />
+    </ItemGroup>
+
+</Project>
