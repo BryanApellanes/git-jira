@@ -1,8 +1,0 @@
-JiraSettings:
-  Url: https://{subdomain}.atlassian.net/
-  Credentials:
-    UserName: '{{userName}}'
-    Password: '{{password}}'
-GitSettings:
-  ProductHeader: 'git-jira-console'
-  AuthToken: '{{authToken}}'

@@ -1,6 +1,4 @@
 using GitJira.Interfaces;
-using GitJira.Interfaces;
-using Google.Protobuf;
 
 namespace GitJira.Classes;
 

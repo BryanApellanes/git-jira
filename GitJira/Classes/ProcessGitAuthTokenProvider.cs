@@ -15,7 +15,7 @@ public class ProcessGitAuthTokenProvider : IGitAuthTokenProvider
     public string AuthTokenCommand { get; set; }
     public string GetGitAuthToken()
     {
-        ProcessOutput output = AuthTokenCommand.Run();
+        ProcessOutput output = Bam.Console.Extensions.Run(AuthTokenCommand);
         return output.StandardOutput.Trim();
     }
 }
