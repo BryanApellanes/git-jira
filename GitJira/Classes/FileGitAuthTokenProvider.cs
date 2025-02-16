@@ -1,4 +1,3 @@
-using Bam;
 using GitJira.Interfaces;
 
 namespace GitJira.Classes;

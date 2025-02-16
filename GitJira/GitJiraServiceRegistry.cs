@@ -1,7 +1,8 @@
 using Bam;
 using Bam.Console;
-using Bam.CoreServices;
+using Bam.DependencyInjection;
 using Bam.Logging;
+using Bam.Services;
 using GitJira.Classes;
 using GitJira.Interfaces;
 

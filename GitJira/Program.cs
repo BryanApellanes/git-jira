@@ -1,6 +1,5 @@
 ﻿using Bam.Console;
 using Bam.Shell;
-using GitJira.Menus;
 
 namespace Bam.Application
 {

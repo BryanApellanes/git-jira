@@ -1,6 +1,3 @@
-using System.Runtime.Intrinsics.X86;
-using Amazon.SecurityToken.Model;
-using Bam;
 using GitJira.Interfaces;
 
 namespace GitJira.Classes;

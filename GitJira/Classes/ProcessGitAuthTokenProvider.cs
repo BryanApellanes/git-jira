@@ -1,5 +1,4 @@
 using Bam.CommandLine;
-using Bam.Console;
 using GitJira.Interfaces;
 
 namespace GitJira.Classes;

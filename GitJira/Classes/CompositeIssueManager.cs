@@ -1,11 +1,6 @@
-using System.Net.Http.Headers;
 using Atlassian.Jira;
-using Bam;
-using Bam.Console;
-using System.Linq;
 using Bam.Logging;
 using GitJira.Interfaces;
-using MongoDB.Driver;
 using Octokit;
 using Issue = Octokit.Issue;
 

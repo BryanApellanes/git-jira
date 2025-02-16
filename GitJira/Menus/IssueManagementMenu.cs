@@ -1,16 +1,8 @@
-using System.Text;
-using System.Threading.Tasks.Dataflow;
-using Amazon.Runtime.EventStreams;
-using Amazon.Runtime.Internal.Transform;
 using Atlassian.Jira;
-using Bam;
 using Bam.Console;
-using Bam.Data;
-using Bam.Encryption;
 using Bam.Shell;
 using GitJira.Classes;
 using GitJira.Interfaces;
-using MongoDB.Driver;
 using Octokit;
 
 namespace GitJira.Menus;

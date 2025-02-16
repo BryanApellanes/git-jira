@@ -1,7 +1,5 @@
 using Bam;
-using Bam;
 using Bam.Encryption;
-using GitJira.Interfaces;
 
 namespace GitJira.Classes;
 

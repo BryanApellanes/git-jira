@@ -1,10 +1,8 @@
 using Bam;
-using Bam.CommandLine;
 using Bam.Console;
 using Bam.Encryption;
 using Bam.Shell;
 using GitJira.Classes;
-using GitJira.Interfaces;
 
 namespace GitJira.Menus;
 

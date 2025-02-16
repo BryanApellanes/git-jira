@@ -1,7 +1,5 @@
-using Atlassian.Jira;
 using GitJira.Interfaces;
 using Octokit;
-using Issue = Octokit.Issue;
 
 namespace GitJira.Classes;
 

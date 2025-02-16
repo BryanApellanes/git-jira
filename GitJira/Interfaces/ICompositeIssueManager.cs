@@ -1,6 +1,5 @@
 using Atlassian.Jira;
 using GitJira.Classes;
-using Octokit;
 
 namespace GitJira.Interfaces;
 

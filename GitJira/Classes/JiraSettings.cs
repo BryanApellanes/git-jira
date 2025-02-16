@@ -1,5 +1,4 @@
 using Bam;
-using GitJira;
 
 namespace GitJira.Classes;
 

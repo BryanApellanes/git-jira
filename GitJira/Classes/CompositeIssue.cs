@@ -1,4 +1,3 @@
-using Atlassian.Jira;
 using Bam;
 using GitJira.Interfaces;
 using Octokit;

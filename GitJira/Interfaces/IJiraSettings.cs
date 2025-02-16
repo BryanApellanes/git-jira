@@ -1,4 +1,3 @@
-using GitJira;
 using GitJira.Classes;
 
 namespace GitJira;

@@ -1,5 +1,3 @@
-using GitJira.Interfaces;
-
 namespace GitJira.Classes;
 
 public class GitHubRepoIdentifier
